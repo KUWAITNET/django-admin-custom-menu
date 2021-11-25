@@ -54,8 +54,7 @@ simple_tag = register.simple_tag
 def render_navigation_menu(context):
     navigation_class = import_string(app_settings.NAVIGATION_CLASS)
     request = context['request']
-    admin_site = context['admin_site']
-    return mark_safe(navigation_class.get_menu(context, request, admin_site))
+    return mark_safe(navigation_class.get_menu(context, request))
 
 
 @simple_tag(takes_context=True)
@@ -194,7 +193,7 @@ class Menu(object):
 
         if not app:
             return
-        if app['name'] in self.conf_labels:
+        if app.get('name', '') in self.conf_labels:
             app['label'] = self.conf_labels.get(app['name'])
 
         # Process icons
