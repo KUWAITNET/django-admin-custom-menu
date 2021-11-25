@@ -7,7 +7,7 @@ in this package I take out the menu ordering and adjusting syntax in a separate 
 How to use
 ----------
 
-* Add 'admin_smart_menu' to INSTALLED_APPS
+* Add 'admin_custom_menu' to INSTALLED_APPS
 * Add menu settings to `ADMIN_MENU_CONFIG`
 * Use the templatetag `{% load suit_menu %} {% render_navigation_menu %}`
 * This will use the template `admin/smart_menu.html` to render the menu. Overrideable of course.
