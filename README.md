@@ -1,4 +1,4 @@
-# django-admin-suit-menu
+# Django Admin Suit Menu
 
 
 Main work is done and inspired by suit menu.
@@ -9,28 +9,32 @@ How to use
 
 * Add 'admin_custom_menu' to INSTALLED_APPS
 * Add menu settings to `ADMIN_MENU_CONFIG`
-* Use the templatetag `{% load suit_menu %} {% render_navigation_menu %}`
+* Use the templatetag `{% load custom_menu %} {% render_navigation_menu %}`
 * This will use the template `admin/smart_menu.html` to render the menu. Overrideable of course.
 
 
 ADMIN_MENU_CONFIG example
 -------------------------
 
-Configuration sample you can use as a start::
+Configuration sample you can use as a start:
+
+
+```python
 
   # Django Suit configuration example
-  ADMIN_MENU_CONFIG = {
-      # 'MENU_ICONS': {
-      #    'sites': 'icon-leaf',
-      #    'auth': 'icon-lock',
-      # },
-      # 'MENU_OPEN_FIRST_CHILD': True, # Default True
-      # 'MENU_EXCLUDE': ('auth.group',),
-      # 'MENU': (
-      #     'sites',
-      #     {'app': 'auth', 'icon':'icon-lock', 'models': ('user', 'group')},
-      #     {'label': 'Settings', 'icon':'icon-cog', 'models': ('auth.user', 'auth.group')},
-      #     {'label': 'Support', 'icon':'icon-question-sign', 'url': '/support/'},
-      # ),
-  }
 
+  ADMIN_MENU_CONFIG = {
+      'MENU_ICONS': {
+         'sites': 'icon-leaf',
+         'auth': 'icon-lock',
+      },
+      'MENU_OPEN_FIRST_CHILD': True, # Default True
+      'MENU_EXCLUDE': ('auth.group',),
+      'MENU': (
+          'sites',
+          {'app': 'auth', 'icon':'icon-lock', 'models': ('user', 'group')},
+          {'label': 'Settings', 'icon':'icon-cog', 'models': ('auth.user', 'auth.group')},
+          {'label': 'Support', 'icon':'icon-question-sign', 'url': '/support/'},
+      ),
+  }
+```
