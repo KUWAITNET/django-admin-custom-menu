@@ -15,8 +15,9 @@ from django.utils.safestring import mark_safe
 from .. import app_settings
 
 
-def default_config():
-    return {
+
+def get_config(param=None):
+    default_config = {
 
         'MENU_OPEN_FIRST_CHILD': True,
         'MENU_ICONS': {
@@ -29,18 +30,15 @@ def default_config():
         },
 
     }
-
-
-def get_config(param=None):
     config_key = 'ADMIN_MENU_CONFIG'
     if hasattr(settings, config_key):
         config = getattr(settings, config_key, {})
     else:
-        config = default_config()
+        config = default_config
     if param:
         value = config.get(param)
         if value is None:
-            value = default_config().get(param)
+            value = default_config.get(param)
         return value
     return config
 
@@ -49,12 +47,14 @@ register = template.Library()
 
 simple_tag = register.simple_tag
 
-
 @register.simple_tag(takes_context=True)
 def render_navigation_menu(context):
-    navigation_class = import_string(app_settings.NAVIGATION_CLASS)
+    from django.template.loader import get_template
     request = context['request']
-    return mark_safe(navigation_class.get_menu(context, request))
+    context['app_list'] = get_menu(context, request)
+    output = get_template('admin/smart_menu.html').render(context.flatten())
+
+    return mark_safe(output)
 
 
 @simple_tag(takes_context=True)
@@ -62,30 +62,20 @@ def get_menu(context, request):
     """
     :type request: HttpRequest
     """
-    if not isinstance(request, HttpRequest):
-        return None
+    # from datetime import datetime
+    # start = datetime.now()
+    # print(start)
+    # import pprofile
+    # profiler = pprofile.Profile()
+    # # with profiler:
+    output = Menu(context, request, context['available_apps']).get_app_list()
 
-    # Try to get app list
-    if hasattr(request, 'current_app'):
-        # Django 1.8 uses request.current_app instead of context.current_app
-        template_response = get_admin_site(request.current_app).index(request)
-    else:
-        try:
-            template_response = get_admin_site(context.current_app).index(request)
-        # Django 1.10 removed the current_app parameter for some classes and functions. 
-        # Check the release notes.
-        except AttributeError:
-            try:
-                template_response = get_admin_site(context.request.resolver_match.namespace).index(request)
-            except:
-                return ''
+    # print(datetime.now())
+    # print(datetime.now()-start)
+    # profiler.print_stats()
+    # profiler.dump_stats("/tmp/profiler_stats.txt")
 
-    try:
-        app_list = template_response.context_data['app_list']
-    except Exception:
-        return
-
-    return Menu(context, request, app_list).get_app_list()
+    return output
 
 
 def get_admin_site(current_app):
@@ -129,7 +119,14 @@ class Menu(object):
             self.ctx_model_plural = None
 
         # Flatten all models from native apps
-        self.all_models = [model for app in app_list for model in app['models']]
+        all_models = []
+        from django import apps
+        for app in app_list:
+            for model in app['models']:
+                model['full_name'] = f'{app["app_label"]}.{model["object_name"].lower()}'
+                all_models.append(model)
+
+        self.all_models = all_models
 
         # Init config variables
         self.init_config()
@@ -325,7 +322,7 @@ class Menu(object):
         return [
             m
             for m in [
-                self.convert_native_model(native_model, app_name)
+                self.convert_native_model(native_model, app_name, model_def)
                 for native_model in self.all_models
                 if self.get_native_model_name(native_model).startswith(prefix)
             ]
@@ -346,12 +343,13 @@ class Menu(object):
     def make_model_from_native(self, model_name, app_name):
         model = self.find_native_model(model_name, app_name)
         if model:
-            return self.convert_native_model(model, app_name)
+            return self.convert_native_model(model, app_name, model_name)
 
     def find_native_model(self, model_name, app_name):
+
         model_name = self.get_model_name(app_name, model_name)
         for native_model in self.all_models:
-            if model_name == self.get_native_model_name(native_model):
+            if model_name == native_model['full_name']: # self.get_native_model_name(native_model):
                 return native_model
 
     def model_is_excluded(self, model_name):
@@ -374,11 +372,11 @@ class Menu(object):
         root_url_parts = reverse('admin:index').rstrip('/').split('/')
         return '.'.join(url_parts[len(root_url_parts):][:2])
 
-    def convert_native_model(self, model, app_name):
+    def convert_native_model(self, model, app_name, model_name=None):
         return {
             'label': model['name'],
             'url': self.get_native_model_url(model),
-            'name': self.get_native_model_name(model),
+            'name': model.get('full_name') , #, self.get_native_model_name(model) ),
             'app': app_name,
             'perms': model.get('perms', None),
             'add_url': model.get('add_url', None),
